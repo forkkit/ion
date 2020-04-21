@@ -1,11 +1,11 @@
 {
-  "name": "ion-js-sdk",
+  "name": "ion-sdk",
   "version": "0.0.1",
   "description": "A js sdk for ion sfu",
   "main": "src/index.js",
   "scripts": {
     "build": "webpack --mode=production --config webpack.config.js",
-    "start": "webpack-dev-server --config ./webpack.config.js --mode development --open --https --cert ../../conf/cert.pem --key  ../../conf/key.pem"
+    "start": "webpack-dev-server --config ./webpack.config.js --mode development --open --https --cert ../../configs/cert.pem --key  ../../configs/key.pem"
   },
   "author": "pion",
   "license": "MIT",
@@ -22,9 +22,10 @@
     "webpack-dev-server": "^3.3.1"
   },
   "dependencies": {
-    "centrifuge": "^2.1.3",
     "events": "^3.0.0",
+    "lodash": "^4.17.15",
     "protoo-client": "^4.0.3",
+    "sdp-transform": "^2.13.0",
     "uuid": "^3.3.2"
   },
   "keywords": [

@@ -9,7 +9,11 @@ module.exports = {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
         use: ['babel-loader']
-      }
+      },
+      {
+        test: /\.(scss|less|css)$/,
+        use: ["style-loader", "css-loader", "sass-loader"]
+      },
     ]
   },
   resolve: {
@@ -26,6 +30,6 @@ module.exports = {
   devServer: {
     contentBase: './dist',
     hot: true,
-    host:"0.0.0.0",
+    host: "0.0.0.0",
   }
 };

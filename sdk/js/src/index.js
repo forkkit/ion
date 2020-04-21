@@ -1,6 +1,5 @@
 
-import SFU from './SFU'
-import Player from './Player'
+import Client from './Client'
+import Stream from './Stream'
 
-window.SFU = SFU;
-window.Player = Player;
+export { Client, Stream }

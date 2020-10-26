@@ -1,17 +1,20 @@
 package signal
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/cloudwebrtc/go-protoo/peer"
-	"github.com/cloudwebrtc/go-protoo/server"
 	"github.com/pion/ion/pkg/log"
+	"github.com/pion/ion/pkg/proto"
 )
 
 type AcceptFunc peer.AcceptFunc
 type RejectFunc peer.RejectFunc
+type RespondFunc peer.RespondFunc
+type BizEntry func(method string, peer *Peer, msg json.RawMessage, claims *Claims, accept RespondFunc, reject RejectFunc)
 
 const (
 	errInvalidMethod = "method not found"
@@ -20,23 +23,21 @@ const (
 )
 
 var (
-	bizCall  func(method string, peer *Peer, msg map[string]interface{}, accept AcceptFunc, reject RejectFunc)
-	wsServer *server.WebSocketServer
-	rooms    = make(map[string]*Room)
-	roomLock sync.RWMutex
+	bizCall               BizEntry
+	rooms                 = make(map[proto.RID]*Room)
+	roomLock              sync.RWMutex
+	allowClientDisconnect bool
 )
 
-func Init(host string, port int, cert, key string, bizEntry interface{}) {
-	wsServer = server.NewWebSocketServer(in)
-	config := server.DefaultConfig()
-	config.Host = host
-	config.Port = port
-	config.CertFile = cert
-	config.KeyFile = key
-	config.HTMLRoot = "web"
-	bizCall = bizEntry.(func(method string, peer *Peer, msg map[string]interface{}, accept AcceptFunc, reject RejectFunc))
-	go wsServer.Bind(config)
+// Init biz signaling
+func Init(conf WebSocketServerConfig, allowDisconnected bool, bizEntry BizEntry) {
+	bizCall = bizEntry
+	allowClientDisconnect = allowDisconnected
 	go stat()
+	go func() {
+		panic(NewWebSocketServer(conf, in))
+	}()
+
 }
 
 func stat() {

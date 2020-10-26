@@ -1,13 +1,41 @@
 package signal
 
 import (
+	"encoding/json"
 	"net/http"
 
+	"github.com/cloudwebrtc/go-protoo/logger"
+	pr "github.com/cloudwebrtc/go-protoo/peer"
 	"github.com/cloudwebrtc/go-protoo/transport"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
+
 	"github.com/pion/ion/pkg/log"
 	"github.com/pion/ion/pkg/proto"
 	"github.com/pion/ion/pkg/util"
 )
+
+var (
+	errorTokenClaimsInvalid = errors.Errorf("Token claims invalid: must have RID or UID")
+)
+
+// Claims supported in JWT
+type Claims struct {
+	UID string `json:"uid"`
+	RID string `json:"rid"`
+	*jwt.StandardClaims
+}
+
+func (c *Claims) Valid() error {
+	if c.RID == "" && c.UID == "" {
+		return errorTokenClaimsInvalid
+	}
+
+	if c.StandardClaims != nil {
+		return c.StandardClaims.Valid()
+	}
+	return nil
+}
 
 func in(transport *transport.WebSocketTransport, request *http.Request) {
 	vars := request.URL.Query()
@@ -19,67 +47,90 @@ func in(transport *transport.WebSocketTransport, request *http.Request) {
 	id := peerID[0]
 	log.Infof("signal.in, id => %s", id)
 	peer := newPeer(id, transport)
+	connectionClaims := ForContext(request.Context())
 
-	handleRequest := func(request map[string]interface{}, accept AcceptFunc, reject RejectFunc) {
+	handleRequest := func(request pr.Request, accept func(interface{}), reject func(errorCode int, errorReason string)) {
 		defer util.Recover("signal.in handleRequest")
-		method := util.Val(request, "method")
+		method := request.Method
 		if method == "" {
 			log.Errorf("method => %v", method)
 			reject(-1, errInvalidMethod)
 			return
 		}
 
-		data := request["data"]
+		data := request.Data
 		if data == nil {
 			log.Errorf("data => %v", data)
 			reject(-1, errInvalidData)
 			return
 		}
 
-		msg := data.(map[string]interface{})
 		log.Infof("signal.in handleRequest id=%s method => %s", peer.ID(), method)
-		bizCall(method, peer, msg, accept, reject)
+		bizCall(method, peer, data, connectionClaims, accept, reject)
 	}
 
-	handleNotification := func(notification map[string]interface{}) {
+	handleNotification := func(notification pr.Notification) {
 		defer util.Recover("signal.in handleNotification")
-		method := util.Val(notification, "method")
+		method := notification.Method
 		if method == "" {
 			log.Errorf("method => %v", method)
 			reject(-1, errInvalidMethod)
 			return
 		}
 
-		data := notification["data"]
+		data := notification.Data
 		if data == nil {
 			log.Errorf("data => %v", data)
 			reject(-1, errInvalidData)
 			return
 		}
 
-		msg := data.(map[string]interface{})
+		// msg := data.(map[string]interface{})
 		log.Infof("signal.in handleNotification id=%s method => %s", peer.ID(), method)
-		bizCall(method, peer, msg, accept, reject)
+		bizCall(method, peer, data, connectionClaims, emptyAccept, reject)
 	}
 
 	handleClose := func(code int, err string) {
+		if allowClientDisconnect {
+			log.Infof("signal.in handleClose.AllowDisconnected => peer (%s)", peer.ID())
+			return
+		}
+
+		roomLock.RLock()
+		defer roomLock.RUnlock()
 		rooms := GetRoomsByPeer(peer.ID())
 		log.Infof("signal.in handleClose [%d] %s rooms=%v", code, err, rooms)
 		for _, room := range rooms {
 			if room != nil {
-				if code > 1000 {
-					msg := make(map[string]interface{})
-					msg["rid"] = room.ID()
-					bizCall(proto.ClientClose, peer, msg, accept, reject)
+				oldPeer := room.GetPeer(peer.ID())
+				// only remove if its the same peer. If newer peer joined before the cleanup, leave it.
+				if oldPeer == &peer.Peer {
+					if code > 1000 {
+						msg := proto.LeaveMsg{
+							RoomInfo: proto.RoomInfo{RID: room.ID()},
+						}
+						msgStr, _ := json.Marshal(msg)
+						bizCall(proto.ClientLeave, peer, msgStr, connectionClaims, emptyAccept, reject)
+					}
+					log.Infof("signal.in handleClose removing peer (%s) from room (%s)", peer.ID(), room.ID())
+					room.RemovePeer(peer.ID())
 				}
-				room.RemovePeer(peer.ID())
 			}
 		}
 		log.Infof("signal.in handleClose => peer (%s) ", peer.ID())
 	}
 
-	peer.On("request", handleRequest)
-	peer.On("notification", handleNotification)
-	peer.On("close", handleClose)
-	peer.On("error", handleClose)
+	for {
+		select {
+		case msg := <-peer.OnNotification:
+			logger.Debugf("Handle Notification")
+			handleNotification(msg)
+		case msg := <-peer.OnRequest:
+			handleRequest(msg.Request, msg.Accept, msg.Reject)
+			logger.Debugf("Handle request")
+		case msg := <-peer.OnClose:
+			logger.Debugf("Handle Peer closing")
+			handleClose(msg.Code, msg.Text)
+		}
+	}
 }

@@ -1,133 +1,104 @@
-# ION
 
-ION is a distributed RTC system written by pure go and flutter
+<div align=left><a href="https://github.com/pion/ion/wiki">
+    <img src="https://github.com/pion/ion/raw/master/docs/imgs/ion.png" width = 15% align = "left">
+</a>
 
-[![Financial Contributors on Open Collective](https://opencollective.com/pion-ion/all/badge.svg?label=financial+contributors)](https://opencollective.com/pion-ion) [![Build Status](https://travis-ci.com/pion/ion.svg?branch=master)](https://travis-ci.com/pion/ion)
-![MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-[![slack](https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=brightgreen)](https://pion.ly/slack)
-[![Go Report Card](https://goreportcard.com/badge/github.com/pion/ion)](https://goreportcard.com/report/github.com/pion/ion)
+#### *ION is a distributed real-time communication system, the goal is to chat anydevice, anytime, anywhere!*
+
+![MIT](https://img.shields.io/badge/License-MIT-yellow.svg)[![Build Status](https://travis-ci.com/pion/ion.svg?branch=master)](https://travis-ci.com/pion/ion)[![Go Report Card](https://goreportcard.com/badge/github.com/pion/ion)![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/pion/ion)![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/pion/ion?include_prereleases)](https://goreportcard.com/report/github.com/pion/ion)![Docker Pulls](https://img.shields.io/docker/pulls/pionwebrtc/ion-biz?style=plastic)[![Financial Contributors on Open Collective](https://opencollective.com/pion-ion/all/badge.svg?label=financial+contributors)](https://opencollective.com/pion-ion) ![GitHub contributors](https://img.shields.io/github/contributors-anon/pion/ion)![Twitter Follow](https://img.shields.io/twitter/follow/_PION?style=social)[![slack](https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=brightgreen)](https://pion.ly/slack)
+
+<br />
+
+## Distributed Real-time Communication System
+
++ **ION** is a secure, self-hosted [WebRTC](https://webrtc.org/) video conferencing [SFU (what is an SFU?)](https://testrtc.com/different-multiparty-video-conferencing/), that you can host today in the cloud or on-premise.
++ This **ION** repository contains the backend cluster services, so you also need to deploy the [web app](https://github.com/pion/ion-app-web) or install a [flutter client for web, desktop or mobile](https://github.com/pion/ion-app-flutter)
++ **ION**'s mission is to deliver world-class tools for creating communication systems, and many people build their projects on top of it:
+  + [**ION** Cluster](https://github.com/pion/ion) (This project!) is composed of two services [`biz` + `ISLB` (see glossary)](docs/glossary.md) and uses `NATS`, `etcd` and `redis` as databases to administer room membership, manage text chat, verify JWT authentication and assign clients to the proper SFU in a multi-datacenter architecture. **ION** Cluster also builds its own version of `ion-sfu` binary, which is lightly adapted to use `NATS-protoo` for signaling (which is how `biz` and `ISLB` trade messages internally).
+  + [`ion-sfu` (external)](https://github.com/pion/ion-sfu), which handles WebRTC streams, can be used as a standalone SFU for designing custom chat experiences or implementing your own scaling architecture. `ion-sfu` is equally capable of forwarding Video, Audio and DataChannel tracks, and can handle arbitrary non-media data transport.
+  + [`ion-avp` Audio/Video Processing](https://github.com/pion/ion-avp) (WIP) is a sidecar utility for running realtime AV processing jobs, including `write-to-disk`, `ffmpeg` and `openCV`
+  + *`ion-live` LIVE node (planned)* - A feed streaming gateway for supporting publishing to and from SIP/RTMP/HLS/RTSP endpoints
++ All built with [pion](https://pion.ly) and [golang](https://golang.org/), **ION** is [fast and efficient](docs/production/stress_test.md)
++ **ION** is [a young project](https://github.com/pion/ion/projects/2), under active development; some people run **ION** in production, but it's not for everyone (yet)
++ **ION** is a community effort and relies on volunteers like you and me!
+
+
+## ❤️Sponsor to help this awsome project go faster！🚀
+(https://opencollective.com/pion-ion)
+
+You can vote for feature if you are a sponsor.
+
+Features: https://github.com/pion/ion/projects/2
+
+## Quick-Start (*LOCALHOST ONLY*)
+
+*NOTE:* Do not attempt to run this example on a VPS, it only works on `localhost`. Make sure you [read the docs](docs/production); WebRTC requires some specific network configuration for the SFU service (depending on your host), and the JavaScript `GetUserMedia()` API can only request camera access on pages with SSL (or `localhost`). If you are not running on `localhost`, you MUST configure networking for SFU and enable HTTPS for `ion-app-web`.
+
+
+#### 1. Run Ion Backend Services
+After cloning the folder, create a docker network (we use this so `ion-app-web` can communicate securely with the backend):
+```
+docker network create ionnet
+
+docker-compose up
+```
+
+#### 3. Expose Ports
+
+Ensure the ports `5000-5200/udp` are exposed or forwarded for the SFU service; 
+
+
+#### 4. UI (optional)
+
+Head over to [Ion Web App](https://github.com/pion/ion-app-web) to bring up the front end.
+
+The web app repo also contains examples of exposing the ion biz websocket via reverse proxy with automatic SSL.
+
+For dev and more options see the wiki
+
+* [Development](https://github.com/pion/ion/tree/master/docs)
+
+
+
+## Documentation
++ [Development](docs/dev/)
+    + [Quick Start](docs/dev/quick_start.md)
+    + [Docker Compose](docs/dev/docker.md)
+    + [Debugging](docs/dev/debugging.md)
++ [Production](docs/production/)
+    + [Docker Compose](docs/production/README.md)
+    + [Kubernetes](kube/README.md)
+    + [Stress Test](docs/production/stress_test.md)
++ [Server](docs/server_features.md)
++ [Clients](docs/client_features.md)
++ Ion SDKs
+    + [SDK - Javascript](https://github.com/pion/ion-sdk-js)
+    + [SDK - Flutter](https://github.com/pion/ion-sdk-flutter)
++ Open-Source ION Clients
+    + [Ion Web App](https://github.com/pion/ion-app-web)
+    + [Ion Flutter App](https://github.com/pion/ion-app-flutter)
++ Other Ion Projects
+    + [Ion Load Tool](https://github.com/pion/ion-load-tool)
+
+
++ [Glossary / Definitions](docs/glossary.md)
++ [Frequently Asked Questions](docs/faq.md)
 
 ## Architecture
-
-![ion](docs/imgs/cloud.png)
-
-## Features
-
-- [x] Distributed Node
-
-  - [x] Standalone BIZ/ISLB and SFU node
-  - [x] Message Queue by NATS
-  - [x] SFU by Pure GO
-  - [x] MCU (WIP)
-  - [x] SFU<-->SFU relay (WIP)
-  - [x] High Performance (WIP)
-
-  - [x] Media Streaming
-    - [x] WebRTC stack
-    - [x] SIP stack (WIP)
-    - [x] RTP/RTP over KCP
-    - [x] JitterBuffer
-      - [x] Nack
-      - [x] PLI
-      - [x] Lite-REMB
-      - [x] Transport-CC(WIP)
-      - [x] Anti-Loss-Package 30%+
-
-- [x] SDK
-  - [x] Flutter SDK
-  - [x] JS SDK
-- [x] Demo
-
-## Contributing
-
-- [adwpc](https://github.com/adwpc) - _Original Author - ion server_
-- [cloudwebrtc](https://github.com/cloudwebrtc) - _Original Author - ion server and client sdk_
-- [kangshaojun](https://github.com/kangshaojun) - _Contributor UI - flutter and react.js_
-- [Sean-Der](https://github.com/Sean-Der) - _ion server and docker_
+![arch](https://github.com/pion/ion/raw/master/docs/imgs/arch.png)
 
 ## Roadmap
 
-[Projects](https://github.com/pion/ion/projects/1)
-Welcome contributing to ion!
+[Roadmap to 1.0](https://github.com/pion/ion/projects/2)
 
-## Stars
+## Maintainers
 
-[![Stargazers over time](https://starchart.cc/pion/ion.svg)](https://starchart.cc/pion/ion)
+<a href="https://github.com/adwpc"><img width="60" height="60" src="https://github.com/adwpc.png?size=500"/></a><a href="https://github.com/cloudwebrtc"><img width="60" height="60" src="https://github.com/cloudwebrtc.png?size=500"/></a><a href="https://github.com/kangshaojun"><img width="60" height="60" src="https://github.com/kangshaojun.png?size=500"/></a><a href="https://github.com/tarrencev"><img width="60" height="60" src="https://github.com/tarrencev.png?size=500"/></a><a href="https://github.com/jbrady42"><img width="60" height="60" src="https://github.com/jbrady42.png?size=500"/></a><a href="https://github.com/leewardbound"><img width="60" height="60" src="https://github.com/leewardbound.png?size=500"/></a>
 
-# Screenshots
+## Contributors
 
-## iOS/Android
+<a href="https://github.com/pion/ion/graphs/contributors"><img src="https://opencollective.com/pion-ion/contributors.svg?width=890&button=false" /></a>
 
-<img width="180" height="370" src="screenshots/flutter/flutter-01.jpg"/> <img width="180" height="370" src="screenshots/flutter/flutter-02.jpg"/> <img width="180" height="370" src="screenshots/flutter/flutter-03.jpg"/>
+*Original Author: [adwpc](https://github.com/adwpc) [cloudwebrtc](https://github.com/cloudwebrtc)*
 
-## PC/HTML5
-
-<img width="360" height="265" src="screenshots/web/ion-01.jpg"/> <img width="360" height="265" src="screenshots/web/ion-02.jpg"/>
-<img width="360" height="265" src="screenshots/web/ion-04.jpg"/> <img width="360" height="265" src="screenshots/web/ion-05.jpg"/>
-
-## How to use
-
-### Local Deployment
-#### 1. clone
-```
-git clone https://github.com/pion/ion
-```
-
-#### 2. run
-Firstly pull images. Skip this command if you want build images locally
-```
-docker-compose pull
-```
-
-```
-docker-compose up
-```
-
-#### 3. chat
-Open this url with chrome
-
-```
-http://localhost:8080
-```
-
-### Online Deployment
-
-#### 1. clone
-
-```
-git clone https://github.com/pion/ion
-```
-
-#### 2. set env
-
-```
-export WWW_URL=yourdomain
-export ADMIN_EMAIL=yourname@yourdomain
-```
-
-#### 3. run
-
-```
-docker-compose up
-```
-
-#### 3. chat
-
-Open this url with chrome
-
-```
-https://yourdomain:8080
-```
-
-### Docker Tips
-
-The provided docker-compose works for deploying to open usage, and can also be used for local development. It also supports auto-generate of certificates via LetsEncrypt.
-
-It accepts the following enviroment variables.
-
-* `WWW_URL` -- Public URL if auto-generating certificates
-* `ADMIN_EMAIL`  -- Email if auto-generating certificates
-
-To run on `conference.pion.ly` you would run `WWW_URL=conference.pion.ly ADMIN_EMAIL=admin@pion.ly docker-compose up`
-
-If `WWW_URL` is set you will access via `https://yourip:8080` OR `http://yourip:8080` if not running with TLS enabled.
+*Community Hero: [Sean-Der](https://github.com/Sean-Der)*

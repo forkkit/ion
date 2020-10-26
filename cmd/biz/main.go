@@ -13,7 +13,14 @@ import (
 
 func init() {
 	log.Init(conf.Log.Level)
-	signal.Init(conf.Signal.Host, conf.Signal.Port, conf.Signal.Cert, conf.Signal.Key, biz.Entry)
+	signal.Init(signal.WebSocketServerConfig{
+		Host:           conf.Signal.Host,
+		Port:           conf.Signal.Port,
+		CertFile:       conf.Signal.Cert,
+		KeyFile:        conf.Signal.Key,
+		WebSocketPath:  conf.Signal.WebSocketPath,
+		AuthConnection: conf.Signal.AuthConnection,
+	}, conf.Signal.AllowDisconnected, biz.Entry)
 }
 
 func close() {
@@ -26,7 +33,10 @@ func main() {
 	if conf.Global.Pprof != "" {
 		go func() {
 			log.Infof("Start pprof on %s", conf.Global.Pprof)
-			http.ListenAndServe(conf.Global.Pprof, nil)
+			err := http.ListenAndServe(conf.Global.Pprof, nil)
+			if err != nil {
+				panic(err)
+			}
 		}()
 	}
 
@@ -35,10 +45,10 @@ func main() {
 
 	rpcID := serviceNode.GetRPCChannel()
 	eventID := serviceNode.GetEventChannel()
-	biz.Init(conf.Global.Dc, serviceNode.NodeInfo().ID, rpcID, eventID, conf.Nats.URL)
+	biz.Init(conf.Global.Dc, serviceNode.NodeInfo().ID, rpcID, eventID, conf.Nats.URL, conf.Signal.AuthRoom)
 
 	serviceWatcher := discovery.NewServiceWatcher(conf.Etcd.Addrs, conf.Global.Dc)
-	serviceWatcher.WatchServiceNode("islb", biz.WatchServiceNodes)
+	go serviceWatcher.WatchServiceNode("islb", biz.WatchServiceNodes)
 
 	defer close()
 	select {}

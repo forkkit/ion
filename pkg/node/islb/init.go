@@ -1,6 +1,7 @@
 package islb
 
 import (
+	"sync"
 	"time"
 
 	nprotoo "github.com/cloudwebrtc/nats-protoo"
@@ -9,17 +10,18 @@ import (
 )
 
 const (
-	redisKeyTTL     = 1500 * time.Millisecond
 	redisLongKeyTTL = 24 * time.Hour
 )
 
 var (
-	dc          = "default"
+	dc = "default"
+	//nolint:unused
 	nid         = "islb-unkown-node-id"
 	protoo      *nprotoo.NatsProtoo
 	redis       *db.Redis
 	services    map[string]discovery.Node
 	broadcaster *nprotoo.Broadcaster
+	roomMutex   sync.Mutex
 )
 
 // Init func
